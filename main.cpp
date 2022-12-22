@@ -139,7 +139,7 @@ class Persona{
 };
 
 void init(Pattini *);
-void init(Persona *,int);
+
 int main(){
 	srand(time(NULL));
 	Orario clock=Orario();
@@ -154,7 +154,15 @@ int main(){
 		cout<<clock;
 		int nPersGroup=rand()%7+1;
 		Persona gruppo[nPersGroup];
-		init(gruppo,nPersGroup);
+		for(int i=0;i<nPersGroup;i++){
+			int min=rand()%10+1;
+			gruppo[i].setEntrata(clock);
+			Orario uscita=clock; //varibaile per creare l'orario di uscita dalla pista della persona
+			uscita.update(15*min);//incremento l'orologio attuale di 15(secondi)*min(minuti) -> secondi => il massimo che può stare dentro una persona
+			gruppo[i].setUscita(uscita); //imposto l'orario di uscita
+			gruppo[i].setTaglia(rand()%(MAX_TAGLIE-MIN_TAGLIE+1)+MIN_TAGLIE); //genero una taglia casuale tra il minimo delle taglie e il massimo e la imposto come valore alla taglia della persona
+			
+		}
 		//ogni secondo incremento l'orologio di 15 secondi
 		sleep(1);
 		clock.update(15);
@@ -172,11 +180,6 @@ void init(Pattini *pat){
 }
 void init(Persona *gruppo,int dim){
 	for(int i=0;i<dim;i++){
-		int min=rand()%10+1;
-		gruppo[i].setEntrata(clock);
-		Orario uscita=clock; //varibaile per creare l'orario di uscita dalla pista della persona
-		uscita.update(15*min);//incremento l'orologio attuale di 15(secondi)*min(minuti) -> secondi => il massimo che può stare dentro una persona
-		gruppo[i].setUscita(uscita); //imposto l'orario di uscita
-		gruppo[i].setTaglia(rand()%(MAX_TAGLIE-MIN_TAGLIE+1)+MIN_TAGLIE); //genero una taglia casuale tra il minimo delle taglie e il massimo e la imposto come valore alla taglia della persona
+		
 	}
 }
