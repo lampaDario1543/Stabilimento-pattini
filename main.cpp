@@ -3,7 +3,7 @@
 #include <time.h>
 #include <cstdlib>
 #include <unistd.h>
-#include <list> //libreria per la lista
+#include <queue> //libreria per la lista
 
 const int DIM_PISTA=100;
 const int MIN_TAGLIE=24;
@@ -23,7 +23,7 @@ class Orario{
 			day=1;
 			ora=min=sec=0;
 		}
-		void update(unsigned int secondi){//non faccio controlli perché il parametro lo metto io nel main
+		void update(unsigned int secondi){//non faccio controlli perchï¿½ il parametro lo metto io nel main
 			if((sec+secondi)>59){
 				sec=((sec+secondi)-60);
 				if((min+1)>59){
@@ -79,13 +79,20 @@ class Pattini{
 			isDisp=true;
 			uses=0;
 		}
-		Pattini(unsigned int id,unsigned int taglia,bool isDisp){
+		Pattini(unsigned int id,unsigned int taglia,bool isDisp,unsigned int uses){
 			this->id=id;
 			this->taglia=taglia;
 			this->isDisp=isDisp;
+			this->uses=uses;
 		}
 		bool getDisp(){
 			return isDisp;
+		}
+		void setDisp(bool disp){
+			isDisp=disp;
+		}
+		int getTaglia(){
+			return taglia;
 		}
 		unsigned int getId(){
 			return id;
@@ -96,6 +103,7 @@ class Pattini{
 		Pattini(const Pattini &p){
 			id=p.id;
 			taglia=p.taglia;
+			uses=p.uses;
 			isDisp=p.isDisp;
 		}
 		friend ostream&operator<<(ostream &out, const Pattini&p);
@@ -114,7 +122,7 @@ class Persona{
 		Orario entrata;
 		Pattini p;
 		Orario uscita;
-		int taglia;
+		unsigned int taglia;
 	public:
 		Persona(){
 			id=0;
@@ -123,6 +131,9 @@ class Persona{
 			p=Pattini();
 			uscita=Orario();
 			taglia=0;
+		}
+		int getTaglia(){
+			return taglia;
 		}
 		void setTaglia(int taglia){
 			this->taglia=taglia;
@@ -136,50 +147,106 @@ class Persona{
 		void setUscita(Orario o){
 			uscita=o;
 		}
+		int getPatId(){
+			return p.getId();
+		}
+		void setId(int id){
+			this->id=id;
+		}
+		void setGroupId(int id){
+			idGruppo=id;
+		}
 };
 
+Orario orologio=Orario();
 void init(Pattini *);
+bool thereIsPat(Pattini *,Persona *,int);
+int searchPat(Pattini *,int id);
 
 int main(){
 	srand(time(NULL));
-	Orario clock=Orario();
-	list<Persona> pista; //pista.
-	list<Persona> waitList; //lista d'attesa delle persone che devono entrare.
+	Persona pista[DIM_PISTA]; //pista.
+	int last=0;
+	int lastId=0;
+	queue<Persona *> waitList; //lista d'attesa delle persone che devono entrare.
 	Pattini pat[DIM_PATTINI*((MAX_TAGLIE-MIN_TAGLIE)+1)];
 	init(pat);
 	/*for(int i=0;i<DIM_PATTINI*((MAX_TAGLIE-MIN_TAGLIE)+1);i++)
 		cout<<pat[i];*/
 	cout<<"ESC - per uscire"<<endl;
 	while(!GetAsyncKeyState(VK_ESCAPE)){
-		cout<<clock;
+		cout<<orologio;
 		int nPersGroup=rand()%7+1;
 		Persona gruppo[nPersGroup];
 		for(int i=0;i<nPersGroup;i++){
-			int min=rand()%10+1;
-			gruppo[i].setEntrata(clock);
-			Orario uscita=clock; //varibaile per creare l'orario di uscita dalla pista della persona
-			uscita.update(15*min);//incremento l'orologio attuale di 15(secondi)*min(minuti) -> secondi => il massimo che può stare dentro una persona
-			gruppo[i].setUscita(uscita); //imposto l'orario di uscita
+			gruppo[i].setId(i);
+			gruppo[i].setGroupId(lastId);
 			gruppo[i].setTaglia(rand()%(MAX_TAGLIE-MIN_TAGLIE+1)+MIN_TAGLIE); //genero una taglia casuale tra il minimo delle taglie e il massimo e la imposto come valore alla taglia della persona
-			
 		}
+		lastId++;
+		if((nPersGroup+last)<DIM_PISTA){
+			if(thereIsPat(pat,gruppo,nPersGroup)){
+				for(int i=0;i<nPersGroup;i++){
+					pista[last]=gruppo[i];
+					last++;
+				}
+			}else{
+				waitList.push(gruppo);
+			}
+		}else
+			waitList.push(gruppo);
 		//ogni secondo incremento l'orologio di 15 secondi
 		sleep(1);
-		clock.update(15);
+		orologio.update(15);
 	}
 	return 0;
 }
-
+bool thereIsPat(Pattini *pat,Persona *gruppo,int nPers){
+	for(int i=0;i<nPers;i++){
+		int j=0;
+		bool flag=true;
+		while(j<DIM_PATTINI*((MAX_TAGLIE-MIN_TAGLIE)+1) && flag){
+			if(gruppo[i].getTaglia()==pat[j].getTaglia() && pat[j].getDisp()){
+				pat[j].setDisp(false);
+				gruppo[i].setPattini(pat[j]);
+				flag=false;
+			}
+			j++;
+		}
+		if(flag){
+			for(int k=0;k<i;k++){
+				if(searchPat(pat,gruppo[k].getPatId())!=-1){
+					pat[searchPat(pat,gruppo[k].getPatId())].setDisp(true);
+					gruppo[k].setPattini(Pattini());
+				}
+			}
+			return false;
+		}
+	}
+	for(int i=0;i<nPers;i++){
+		pat[searchPat(pat,gruppo[i].getPatId())]++;
+		int min=rand()%10+1;
+		gruppo[i].setEntrata(orologio);
+		Orario uscita=orologio; //varibaile per creare l'orario di uscita dalla pista della persona
+		uscita.update(60*min);//incremento l'orologio attuale di 60(secondi)*min(minuti) -> secondi => il massimo che puo' stare dentro una persona
+		gruppo[i].setUscita(uscita); //imposto l'orario di uscita
+	}
+	return true;
+}
+int searchPat(Pattini *pat,int id){
+	for(int i=0;i<DIM_PATTINI*((MAX_TAGLIE-MIN_TAGLIE)+1);i++){
+		if(pat[i].getId()==id){
+			pat[i].setDisp(true);	
+			return i;
+		}
+	}
+	return -1;
+}
 void init(Pattini *pat){
 	int taglia=MIN_TAGLIE;
 	for(int i=0;i<DIM_PATTINI*((MAX_TAGLIE-MIN_TAGLIE)+1);i++){
-		pat[i]=Pattini(i,taglia,true);
-		if((i+1)%DIM_PATTINI==0)//se i è divisibile per la dimensione dell'array dei pattini allora incremento la taglia
+		pat[i]=Pattini(i,taglia,true,0);
+		if((i+1)%DIM_PATTINI==0)//se i e' divisibile per la dimensione dell'array dei pattini allora incremento la taglia
 			taglia++;
-	}
-}
-void init(Persona *gruppo,int dim){
-	for(int i=0;i<dim;i++){
-		
 	}
 }
