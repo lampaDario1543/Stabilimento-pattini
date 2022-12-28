@@ -176,7 +176,7 @@ int main(){
 	cout<<"ESC - per uscire"<<endl;
 	while(!GetAsyncKeyState(VK_ESCAPE)){
 		cout<<orologio;
-		int nPersGroup=rand()%7+1;
+		int nPersGroup=rand()%7+1;//genero casualmente il numero di persone di un gruppo
 		Persona gruppo[nPersGroup];
 		for(int i=0;i<nPersGroup;i++){
 			gruppo[i].setId(i);

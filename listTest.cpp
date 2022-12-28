@@ -20,6 +20,6 @@ int main(){
 	coda.push(v2);
 	coda.push(v3);
 	coda.pop();
-	cout<<coda.front()[0];
+	cout<<coda.empty();
 	return 0;
 }
